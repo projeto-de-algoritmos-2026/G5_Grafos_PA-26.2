@@ -25,3 +25,38 @@ const maze = [
 function key(x, y) {
     return x + "," + y;
 }
+
+function buildGraph(maze) {
+    const graph = {};
+    const lines = maze.length;       
+    const columns = maze[0].length;  
+
+    for (let y = 0; y < lines; y++) {
+        for (let x = 0; x < columns; x++) {
+
+            if (maze[y][x] === 1) continue; // parede
+
+            const currentKey = key(x, y);
+            graph[currentKey] = []; // célula livre começa com lista vazia de vizinhos
+
+            // 4 direções possíveis
+            const neighbors = [
+                { nx: x + 1, ny: y },
+                { nx: x - 1, ny: y },
+                { nx: x, ny: y + 1 },
+                { nx: x, ny: y - 1 },
+            ];
+
+            for (const { nx, ny } of neighbors) {
+                // verifica se está dentro do grid
+                if (nx < 0 || nx >= columns || ny < 0 || ny >= lines) continue;
+                // verifica se a vizinha é livre
+                if (maze[ny][nx] === 1) continue;
+
+                graph[currentKey].push(key(nx, ny));
+            }
+        }
+    }
+
+    return graph;
+}
