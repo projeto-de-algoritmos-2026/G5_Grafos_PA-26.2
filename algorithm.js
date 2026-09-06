@@ -1,26 +1,4 @@
-// 0 = caminho livre, 1 = parede
-const maze = [
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-];
+const maze = generateMaze(Columns, Lines);
 
 function key(x, y) {
     return x + "," + y;
@@ -143,8 +121,8 @@ function moveMonsterTowardsPlayer(graph, monsterX, monsterY, playerX, playerY) {
     return { x: nextX, y: nextY };
 }
 
-const player = { x: 1, y: 1 };
-const monster = { x: 18, y: 18 };
+const player = findRandomOpenCell(maze);
+const monster = findRandomOpenCell(maze);
 
 function drawEntity(entity, color) {
     ctx.fillStyle = color;
@@ -183,3 +161,84 @@ setInterval(() => {
 }, 500);
 
 draw();
+
+function generateMaze(columns, lines) {
+    // começa tudo como parede
+    const maze = [];
+    for (let y = 0; y < lines; y++) {
+        maze.push(new Array(columns).fill(1));
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function carve(x, y) {
+        maze[y][x] = 0; // abre a célula atual
+
+        // as 4 direções, pulando de 2 em 2
+        let directions = shuffle([
+            { dx: 2, dy: 0 },
+            { dx: -2, dy: 0 },
+            { dx: 0, dy: 2 },
+            { dx: 0, dy: -2 },
+        ]);
+
+        for (const { dx, dy } of directions) {
+            const nx = x + dx;
+            const ny = y + dy;
+
+            // checa se está dentro do grid (deixando 1 célula de margem pra borda)
+            if (nx <= 0 || nx >= columns - 1 || ny <= 0 || ny >= lines - 1) continue;
+
+            // se a célula de destino ainda é parede (não visitada)
+            if (maze[ny][nx] === 1) {
+                // abre a célula "do meio" (a parede entre a atual e a próxima)
+                maze[y + dy / 2][x + dx / 2] = 0;
+                carve(nx, ny); // continua o DFS a partir dali
+            }
+        }
+    }
+
+    carve(1, 1); // começa no canto superior esquerdo (dentro da borda)
+
+    return maze;
+}
+
+function findRandomOpenCell(maze) {
+    const openCells = [];
+
+    for (let y = 0; y < maze.length; y++) {
+        for (let x = 0; x < maze[0].length; x++) {
+            if (maze[y][x] === 0) {
+                openCells.push({ x, y });
+            }
+        }
+    }
+
+    const randomIndex = Math.floor(Math.random() * openCells.length);
+    return openCells[randomIndex];
+}
+
+function drawMaze(maze) {
+    ctx.fillStyle = "black";
+    for (let y = 0; y < maze.length; y++) {
+        for (let x = 0; x < maze[0].length; x++) {
+            if (maze[y][x] === 1) {
+                ctx.fillRect(x * Cells, y * Cells, Cells, Cells);
+            }
+        }
+    }
+}
+
+function draw() {
+    clearCanvas();
+    drawGrid();
+    drawMaze(maze); // <- adiciona essa linha
+    drawEntity(player, "blue");
+    drawEntity(monster, "red");
+}
