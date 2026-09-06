@@ -105,3 +105,22 @@ function dijkstra(graph, start) {
 
     return { distances, previous };
 }
+
+function getPath(previous, start, end) {
+    const path = [];
+    let currentNode = end;
+
+    // vai voltando até chegar na origem
+    while (currentNode !== null) {
+        path.push(currentNode);
+        currentNode = previous[currentNode];
+    }
+
+    path.reverse(); 
+
+    if (path[0] !== start) {
+        return null;
+    }
+
+    return path;
+}
