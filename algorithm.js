@@ -60,3 +60,48 @@ function buildGraph(maze) {
 
     return graph;
 }
+
+function dijkstra(graph, start) {
+    const distances = {};   
+    const previous = {};  
+    const visited = {};
+
+    for (const node in graph) {
+        distances[node] = Infinity;
+        previous[node] = null;
+    }
+    distances[start] = 0;
+
+    while (true) {
+        // escolhe o nó não visitado com a menor distância conhecida
+        let currentNode = null;
+        let smallestDistance = Infinity;
+
+        for (const node in distances) {
+            if (!visited[node] && distances[node] < smallestDistance) {
+                smallestDistance = distances[node];
+                currentNode = node;
+            }
+        }
+
+        // se não sobrou nenhum nó alcançável, terminou
+        if (currentNode === null) break;
+
+        visited[currentNode] = true;
+
+        // olha os vizinhos do nó atual
+        const neighbors = graph[currentNode];
+        for (const neighbor of neighbors) {
+            if (visited[neighbor]) continue;
+
+            const newDistance = distances[currentNode] + 1; // custo sempre 1 pra andar uma célula
+
+            if (newDistance < distances[neighbor]) {
+                distances[neighbor] = newDistance;
+                previous[neighbor] = currentNode;
+            }
+        }
+    }
+
+    return { distances, previous };
+}
