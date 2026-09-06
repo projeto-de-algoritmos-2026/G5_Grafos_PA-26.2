@@ -124,3 +124,62 @@ function getPath(previous, start, end) {
 
     return path;
 }
+
+function moveMonsterTowardsPlayer(graph, monsterX, monsterY, playerX, playerY) {
+    const monsterKey = key(monsterX, monsterY);
+    const playerKey = key(playerX, playerY);
+
+    const result = dijkstra(graph, monsterKey);
+    const path = getPath(result.previous, monsterKey, playerKey);
+
+    // monstro para se não tem caminho possível ou se ta na posição do jogador
+    if (path === null || path.length < 2) {
+        return { x: monsterX, y: monsterY };
+    }
+
+    const nextStep = path[1]; // próxima célula na direção do jogador
+    const [nextX, nextY] = nextStep.split(",").map(Number);
+
+    return { x: nextX, y: nextY };
+}
+
+const player = { x: 1, y: 1 };
+const monster = { x: 18, y: 18 };
+
+function drawEntity(entity, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(entity.x * Cells, entity.y * Cells, Cells, Cells);
+}
+
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawGrid() {
+    ctx.strokeStyle = "black";
+    for (let i = 0; i < Columns; i++) {
+        for (let j = 0; j < Lines; j++) {
+            ctx.strokeRect(i * Cells, j * Cells, Cells, Cells);
+        }
+    }
+}
+
+function draw() {
+    clearCanvas();
+    drawGrid();
+    drawEntity(player, "blue");
+    drawEntity(monster, "red");
+}
+
+const graph = buildGraph(maze); // calculado uma única vez, fora do loop
+
+setInterval(() => {
+    const newPosition = moveMonsterTowardsPlayer(graph, monster.x, monster.y, player.x, player.y);
+
+    monster.x = newPosition.x;
+    monster.y = newPosition.y;
+
+    draw();
+}, 500);
+
+draw();
