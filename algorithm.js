@@ -88,3 +88,97 @@ function moveMonsterTowardsPlayer(graph, weights, monsterX, monsterY, playerX, p
     const [nextX, nextY] = path[1].split(",").map(Number)
     return {x: nextX, y: nextY}
 }
+
+function removeEdge(graph, nodeA, nodeB) {
+    const newGraph = {}
+    for (const node in graph) {
+        newGraph[node] = [...graph[node]] 
+    }
+    newGraph[nodeA] = newGraph[nodeA].filter(n => n !== nodeB)
+    newGraph[nodeB] = newGraph[nodeB].filter(n => n !== nodeA)
+    return newGraph
+}
+
+function pathsEqual(pathA, pathB) {
+    return pathA.join("|") === pathB.join("|")
+}
+
+function getTopKPaths(graph, weights, start, end, k = 3) {
+    const results = []
+    const candidates = []
+
+    // 1º melhor caminho
+    const firstResult = dijkstra(graph, start, weights)
+    const firstPath = getPath(firstResult.previous, start, end)
+    if (firstPath === null) return results // nem o primeiro existe
+    results.push({ path: firstPath, cost: firstResult.distances[end] })
+
+    while (results.length < k) {
+        const lastPath = results[results.length - 1].path
+
+        // remove cada aresta do último melhor caminho encontrado, uma de cada vez
+        for (let i = 0; i < lastPath.length - 1; i++) {
+            const modifiedGraph = removeEdge(graph, lastPath[i], lastPath[i + 1])
+            const result = dijkstra(modifiedGraph, start, weights)
+            const path = getPath(result.previous, start, end)
+
+            if (path === null) continue
+
+            const alreadyFound = results.some(r => pathsEqual(r.path, path))
+            const alreadyCandidate = candidates.some(c => pathsEqual(c.path, path))
+            if (!alreadyFound && !alreadyCandidate) {
+                candidates.push({ path, cost: result.distances[end] })
+            }
+        }
+
+        if (candidates.length === 0) break // não há mais caminhos alternativos
+
+        candidates.sort((a, b) => a.cost - b.cost)
+        results.push(candidates.shift()) // pega o mais barato e tira da lista de candidatos
+    }
+
+    return results
+}
+
+function addLoops(maze, columns, lines, loopChance = 0.05) {
+    for (let y = 1; y < lines - 1; y++) {
+        for (let x = 1; x < columns - 1; x++) {
+            if (maze[y][x] !== 1) continue // já é caminho, pula
+
+            // conta quantos vizinhos livres essa parede tem
+            const openNeighbors = [
+                maze[y-1][x], maze[y+1][x], maze[y][x-1], maze[y][x+1]
+            ].filter(v => v === 0).length
+
+            // parede entre exatamente 2 corredores (não é canto/cruzamento) vira caminho com chance pequena
+            if (openNeighbors === 2 && Math.random() < loopChance) {
+                maze[y][x] = 0
+            }
+        }
+    }
+}
+
+// --- dica pro jogador: mostra os 3 melhores caminhos até a saída ---
+let showHint = false
+let hintPaths = []
+
+function toggleHint(graph, weights, player, exit) {
+    showHint = !showHint
+    if (showHint) {
+        hintPaths = getTopKPaths(graph, weights, key(player.x, player.y), key(exit.x, exit.y), 3)
+    }
+}
+
+function drawHintPaths() {
+    if (!showHint || hintPaths.length === 0) return
+
+    const colors = ['rgba(0,255,0,0.45)', 'rgba(255,255,0,0.35)', 'rgba(255,0,255,0.3)']
+
+    hintPaths.forEach((result, i) => {
+        ctx.fillStyle = colors[i % colors.length]
+        for (const cellKey of result.path) {
+            const [x, y] = cellKey.split(",").map(Number)
+            ctx.fillRect(x * Cells + Cells * 0.15, y * Cells + Cells * 0.15, Cells * 0.7, Cells * 0.7)
+        }
+    })
+}

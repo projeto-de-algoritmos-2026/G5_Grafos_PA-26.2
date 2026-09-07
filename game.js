@@ -216,6 +216,7 @@ function draw(time = 0) {
     drawGrid(Columns, Lines, maze, time)
     drawEntity(player, PLAYER_EMOJI)
     monsters.forEach((monster, i) => drawEntity(monster, MONSTER_EMOJIS[i % MONSTER_EMOJIS.length]))
+    drawHintPaths() 
 }
 
 function startRenderLoop() {
@@ -242,6 +243,10 @@ function hideEndScreen() {
 }
 
 document.addEventListener('keydown', function(event) {
+    if (event.key === 'h' || event.key === 'H') {
+    toggleHint(graph, weights, player, exit)
+    return
+    }
     if (gameOver) return  // ignora input enquanto a tela de fim está aberta
 
     let dx = 0, dy = 0
@@ -329,6 +334,7 @@ function placeHazards(maze) {
 
 function newGame() {
     maze = generateMaze(Columns, Lines)
+    addLoops(maze, Columns, Lines) 
     player = findRandomOpenCell(maze)
     monsters = []
     for (let i = 0; i < MONSTER_COUNT; i++) {
