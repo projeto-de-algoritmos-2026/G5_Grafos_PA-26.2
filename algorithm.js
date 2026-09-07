@@ -2,8 +2,13 @@ function key(x, y) {
     return x + "," + y
 }
 
+function cellWeight(cellValue) {
+    return cellValue === 3 ? 2 : 1  // água custa 2 turnos, resto custa 1
+}
+
 function buildGraph(maze) {
     const graph = {}
+    const weights = {}
     const lines = maze.length
     const columns = maze[0].length
     for (let y = 0; y < lines; y++) {
@@ -11,6 +16,7 @@ function buildGraph(maze) {
             if (maze[y][x] === 1) continue
             const currentKey = key(x, y)
             graph[currentKey] = []
+            weights[currentKey] = cellWeight(maze[y][x])
             const neighbors = [
                 {nx: x+1, ny: y}, {nx: x-1, ny: y},
                 {nx: x, ny: y+1}, {nx: x, ny: y-1}
@@ -22,14 +28,14 @@ function buildGraph(maze) {
             }
         }
     }
-    return graph
+    return { graph, weights }
 }
 
-function dijkstra(graph, start) {
-    return dijkstraMulti(graph, [start])
+function dijkstra(graph, start, weights) {
+    return dijkstraMulti(graph, [start], weights)
 }
 
-function dijkstraMulti(graph, starts) {
+function dijkstraMulti(graph, starts, weights) {
     const distances = {}, previous = {}, visited = {}
     for (const node in graph) {
         distances[node] = Infinity
@@ -50,7 +56,8 @@ function dijkstraMulti(graph, starts) {
         visited[currentNode] = true
         for (const neighbor of graph[currentNode]) {
             if (visited[neighbor]) continue
-            const newDistance = distances[currentNode] + 1
+            const edgeWeight = weights ? weights[neighbor] : 1
+            const newDistance = distances[currentNode] + edgeWeight
             if (newDistance < distances[neighbor]) {
                 distances[neighbor] = newDistance
                 previous[neighbor] = currentNode
@@ -72,10 +79,10 @@ function getPath(previous, start, end) {
     return path
 }
 
-function moveMonsterTowardsPlayer(graph, monsterX, monsterY, playerX, playerY) {
+function moveMonsterTowardsPlayer(graph, weights, monsterX, monsterY, playerX, playerY) {
     const monsterKey = key(monsterX, monsterY)
     const playerKey = key(playerX, playerY)
-    const result = dijkstra(graph, monsterKey)
+    const result = dijkstra(graph, monsterKey, weights)
     const path = getPath(result.previous, monsterKey, playerKey)
     if (path === null || path.length < 2) return {x: monsterX, y: monsterY}
     const [nextX, nextY] = path[1].split(",").map(Number)

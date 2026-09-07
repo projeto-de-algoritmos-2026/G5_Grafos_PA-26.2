@@ -1,13 +1,123 @@
 body{
-    background-color: #1a1a2e;
+    background: radial-gradient(circle at 50% 0%, #232752 0%, #1a1a2e 60%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    font-family: sans-serif;
+    font-family: 'Segoe UI', sans-serif;
     color: aliceblue;
+    min-height: 100vh;
+    margin: 0;
+    padding: 24px 0 40px;
+}
+
+h1{
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+    margin-bottom: 12px;
+}
+
+.board-wrap{
+    position: relative;
+    line-height: 0;
 }
 
 canvas{
-    border: 2px solid #444;
+    border: 3px solid #444;
+    border-radius: 10px;
+    box-shadow: 0 0 0 4px #0f3460, 0 12px 40px rgba(0, 0, 0, 0.55);
 }
 
+.overlay{
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 10, 20, 0.72);
+    backdrop-filter: blur(3px);
+    border-radius: 10px;
+    animation: fadeIn 0.25s ease-out forwards;
+}
+
+.overlay.hidden{
+    display: none;
+}
+
+.overlay-card{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 32px 48px;
+    border-radius: 16px;
+    background: #16213e;
+    border: 2px solid #444;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    animation: popIn 0.3s ease-out forwards;
+    text-align: center;
+    line-height: normal;
+}
+
+.overlay-card.win{
+    border-color: #FFD700;
+    box-shadow: 0 0 32px rgba(255, 215, 0, 0.45), 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.overlay-card.lose{
+    border-color: #e24b4a;
+    box-shadow: 0 0 32px rgba(226, 75, 74, 0.45), 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.overlay-emoji{
+    font-size: 56px;
+    line-height: 1;
+}
+
+.overlay-card h2{
+    margin: 4px 0 0;
+}
+
+.overlay-card.win h2{
+    color: #FFD700;
+}
+
+.overlay-card.lose h2{
+    color: #e24b4a;
+}
+
+.overlay-card p{
+    margin: 0 0 12px;
+    color: #c7cbe0;
+    max-width: 260px;
+}
+
+#restartBtn{
+    padding: 10px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    background: #FFD700;
+    color: #16213e;
+    cursor: pointer;
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+}
+
+#restartBtn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+#restartBtn:active{
+    transform: translateY(0);
+}
+
+@keyframes fadeIn{
+    from{ opacity: 0; }
+    to{ opacity: 1; }
+}
+
+@keyframes popIn{
+    from{ opacity: 0; transform: scale(0.85); }
+    to{ opacity: 1; transform: scale(1); }
+}

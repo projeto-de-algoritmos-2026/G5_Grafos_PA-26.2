@@ -7,8 +7,18 @@
     <link rel="stylesheet" href="style.css">
 </head> 
 <body>
-    <h1>Monsters</h1>
-    <canvas id="gc"></canvas>
+    <h1>🏚️ Monsters</h1>
+    <div class="board-wrap">
+        <canvas id="gc"></canvas>
+        <div id="overlay" class="overlay hidden">
+            <div id="overlayCard" class="overlay-card">
+                <div id="overlayEmoji" class="overlay-emoji"></div>
+                <h2 id="overlayTitle"></h2>
+                <p id="overlayMessage"></p>
+                <button id="restartBtn">Jogar novamente</button>
+            </div>
+        </div>
+    </div>
     <script src="algorithm.js"></script>
     <script src="game.js"></script>
 </body>
