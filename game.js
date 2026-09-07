@@ -7,6 +7,8 @@ const Cells = 36 //isso aqui e o tamanho dos PIXELS das celulas, as varaveis aci
 canvas.width =  Columns*Cells
 canvas.height = Lines*Cells
 
+let maze, player, monsters, graph
+
 function generateMaze(columns, lines){
     const maze=[]
     for(let i=0;i<lines;i++) maze.push(new Array(columns).fill(1))
@@ -96,11 +98,19 @@ document.addEventListener('keydown', function(event) {
     if (maze[ny][nx] === 0) {
         player.x = nx
         player.y = ny
+
+        for (const monster of monsters) {
+            const newPos = moveMonsterTowardsPlayer(graph, monster.x, monster.y, player.x, player.y)
+            monster.x = newPos.x
+            monster.y = newPos.y
+        }
+
         draw()
     }
 })
 
-const maze=generateMaze(Columns,Lines)
-const player = findRandomOpenCell(maze)
-const monsters = [findRandomOpenCell(maze), findRandomOpenCell(maze)]
+maze=generateMaze(Columns,Lines)
+player = findRandomOpenCell(maze)
+monsters = [findRandomOpenCell(maze), findRandomOpenCell(maze)]
+graph = buildGraph(maze)  
 draw()
