@@ -8,6 +8,7 @@ canvas.width =  Columns*Cells
 canvas.height = Lines*Cells
 
 let maze, player, monsters, graph, exit
+let stuck = false  //true quando player tá na água esperando 2º aperto
 
 function generateMaze(columns, lines){
     const maze=[]
@@ -95,6 +96,8 @@ function drawGrid(columns, lines, maze){
             if(maze[y][x]==1) ctx.fillStyle = '#0f3460'
             else if (maze[y][x] === 2) ctx.fillStyle = '#FFD700'  // dourado
             else if(maze[y][x]==0) ctx.fillStyle = '#16213e'
+            else if (maze[y][x] === 3) ctx.fillStyle = '#1a6eb5'  // água — azul
+            else if (maze[y][x] === 4) ctx.fillStyle = '#8B4513'  // ponte — marrom
             ctx.fillRect(x*Cells, y*Cells, Cells, Cells)
 
         }
@@ -135,11 +138,31 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'ArrowDown')  dy = 1
     if (event.key === 'ArrowLeft')  dx = -1
     if (event.key === 'ArrowRight') dx = 1
+
+    if (dx === 0 && dy === 0) return  // tecla irrelevante, ignora
+
+    // se tá preso na água, só move monstros e solta
+    if (stuck) {
+        stuck = false
+        for (const monster of monsters) {
+            const newPos = moveMonsterTowardsPlayer(graph, monster.x, monster.y, player.x, player.y)
+            monster.x = newPos.x
+            monster.y = newPos.y
+            if (monster.x === player.x && monster.y === player.y) {
+                draw()
+                alert('Você foi capturado!💀')
+                return
+            }
+        }
+        draw()
+        return
+    }
+
     const nx = player.x + dx
     const ny = player.y + dy
 
-    // só mexe se não for parede
-    if (maze[ny][nx] === 0 || maze[ny][nx] === 2) {
+    if (maze[ny][nx] === 1) return  // parede, ignora
+
     player.x = nx
     player.y = ny
 
@@ -150,13 +173,27 @@ document.addEventListener('keydown', function(event) {
         return
     }
 
+    // chegou na água — fica preso, monstros não movem ainda
+    if (maze[ny][nx] === 3) {
+        stuck = true
+        draw()
+        return
+    }
+
+    // chegou na ponte — 50% de morrer
+    if (maze[ny][nx] === 4) {
+        if (Math.random() < 0.5) {
+            draw()
+            alert('A ponte quebrou! Você morreu!💀')
+            return
+        }
+    }
+
     // move monstros
     for (const monster of monsters) {
         const newPos = moveMonsterTowardsPlayer(graph, monster.x, monster.y, player.x, player.y)
         monster.x = newPos.x
         monster.y = newPos.y
-
-        // condição de derrota
         if (monster.x === player.x && monster.y === player.y) {
             draw()
             alert('Você foi capturado!💀')
@@ -165,12 +202,29 @@ document.addEventListener('keydown', function(event) {
     }
 
     draw()
-}
 })
+
+function placeHazards(maze) {
+    const openCells = []
+    for (let y = 0; y < Lines; y++)
+        for (let x = 0; x < Columns; x++)
+            if (maze[y][x] === 0) openCells.push({x, y})
+
+    // embaralha e pega as primeiras 30 células
+    for (let i = openCells.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1))
+        ;[openCells[i], openCells[j]] = [openCells[j], openCells[i]]
+    }
+
+    // primeiras 15 viram água, próximas 15 viram ponte
+    for (let i = 0; i < 15; i++) maze[openCells[i].y][openCells[i].x] = 3
+    for (let i = 15; i < 30; i++) maze[openCells[i].y][openCells[i].x] = 4
+}
 
 maze = generateMaze(Columns, Lines)
 player = findRandomOpenCell(maze)
 monsters = [findRandomOpenCell(maze), findRandomOpenCell(maze)]
+placeHazards(maze)
 graph = buildGraph(maze)
 exit = placeExit(maze, graph, player.x, player.y, monsters)
 draw()
