@@ -16,6 +16,14 @@ h1{
     margin-bottom: 12px;
 }
 
+#hud{
+    font-size: 20px;
+    font-weight: 700;
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    margin-bottom: 12px;
+}
+
 .board-wrap{
     position: relative;
     line-height: 0;
@@ -89,6 +97,13 @@ canvas{
     margin: 0 0 12px;
     color: #c7cbe0;
     max-width: 260px;
+}
+
+.overlay-card #overlayScore{
+    color: #FFD700;
+    font-weight: 700;
+    font-size: 17px;
+    margin: -4px 0 12px;
 }
 
 #restartBtn{

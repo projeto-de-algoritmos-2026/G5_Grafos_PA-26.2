@@ -10,10 +10,31 @@ canvas.height = Lines*Cells
 let maze, player, monsters, graph, weights, exit
 let stuck = false  //true quando player tá na água esperando 2º aperto
 let gameOver = false
+let score = 0
 
-const PLAYER_EMOJI = '🙂'
-const MONSTER_EMOJIS = ['👹', '👻', '🧟', '🐺', '🦇', '🧌']
+const PLAYER_IMAGE = 'player'
+const MONSTER_IMAGES = ['monster1', 'monster2', 'monster3', 'monster4', 'monster5', 'monster6']
 const MONSTER_COUNT = 6
+
+const IMAGES = {}
+function loadImage(name) {
+    return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve()
+        img.onerror = reject
+        img.src = `assets/${name}.png`
+        IMAGES[name] = img
+    })
+}
+
+function loadAssets() {
+    const names = ['grass1', 'grass2', 'tree1', 'tree2', 'mango', PLAYER_IMAGE, ...MONSTER_IMAGES]
+    return Promise.all(names.map(loadImage))
+}
+
+function updateScore() {
+    document.getElementById('score').textContent = score
+}
 
 function generateMaze(columns, lines){
     const maze=[]
@@ -100,16 +121,20 @@ function hash2(x, y) {
     return h - Math.floor(h)
 }
 
-function drawWallCell(px, py) {
-    ctx.fillStyle = '#141414'
-    ctx.fillRect(px, py, Cells, Cells)
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)'
-    ctx.strokeRect(px + 0.5, py + 0.5, Cells - 1, Cells - 1)
+function drawWallCell(px, py, x, y) {
+    const img = hash2(x, y) > 0.5 ? IMAGES.tree1 : IMAGES.tree2
+    ctx.drawImage(img, px, py, Cells, Cells)
 }
 
 function drawFloorCell(px, py, x, y) {
-    ctx.fillStyle = (x + y) % 2 === 0 ? '#0d0d0d' : '#111111'
-    ctx.fillRect(px, py, Cells, Cells)
+    const img = (x + y) % 2 === 0 ? IMAGES.grass1 : IMAGES.grass2
+    ctx.drawImage(img, px, py, Cells, Cells)
+}
+
+function drawMangoCell(px, py, x, y, time) {
+    drawFloorCell(px, py, x, y)
+    const bob = Math.sin(time / 250 + x + y) * 2
+    ctx.drawImage(IMAGES.mango, px + Cells * 0.1, py + Cells * 0.1 + bob, Cells * 0.8, Cells * 0.8)
 }
 
 function drawWaterCell(px, py, time) {
@@ -183,11 +208,12 @@ function drawGrid(columns, lines, maze, time){
         for(let x=0;x<columns;x++){
             const px = x*Cells, py = y*Cells
             const val = maze[y][x]
-            if (val === 1) drawWallCell(px, py)
+            if (val === 1) drawWallCell(px, py, x, y)
             else if (val === 0) drawFloorCell(px, py, x, y)
             else if (val === 2) drawExitCell(px, py, time)
             else if (val === 3) drawWaterCell(px, py, time)
             else if (val === 4) drawBridgeCell(px, py, x, y)
+            else if (val === 5) drawMangoCell(px, py, x, y, time)
         }
     }
 }
@@ -202,21 +228,18 @@ function findRandomOpenCell(maze, excluded = []){
     return openCells[Math.floor(Math.random() * openCells.length)]
 }
 
-function drawEntity(entity, emoji) {
-    const x = entity.x * Cells + Cells/2  // centro horizontal da célula
-    const y = entity.y * Cells + Cells/2  // centro vertical da célula
+function drawEntity(entity, imageKey) {
+    const px = entity.x * Cells  // canto da célula
+    const py = entity.y * Cells
 
-    ctx.font = `${Cells * 0.72}px serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(emoji, x, y + 2)
+    ctx.drawImage(IMAGES[imageKey], px, py, Cells, Cells)
 }
 
 function draw(time = 0) {
     drawGrid(Columns, Lines, maze, time)
-    drawEntity(player, PLAYER_EMOJI)
-    monsters.forEach((monster, i) => drawEntity(monster, MONSTER_EMOJIS[i % MONSTER_EMOJIS.length]))
-    drawHintPaths() 
+    drawEntity(player, PLAYER_IMAGE)
+    monsters.forEach((monster, i) => drawEntity(monster, MONSTER_IMAGES[i % MONSTER_IMAGES.length]))
+    drawHintPaths()
 }
 
 function startRenderLoop() {
@@ -228,11 +251,15 @@ function startRenderLoop() {
 
 function showEndScreen(kind, title, message) {
     gameOver = true
+    score = kind === 'win' ? score + 300 : Math.max(0, score - 100)
+    updateScore()
+
     const overlay = document.getElementById('overlay')
     const card = document.getElementById('overlayCard')
     document.getElementById('overlayEmoji').textContent = kind === 'win' ? '🎉' : '💀'
     document.getElementById('overlayTitle').textContent = title
     document.getElementById('overlayMessage').textContent = message
+    document.getElementById('overlayScore').textContent = `🥭 Pontuação final: ${score}`
     card.classList.remove('win', 'lose')
     card.classList.add(kind)
     overlay.classList.remove('hidden')
@@ -280,6 +307,13 @@ document.addEventListener('keydown', function(event) {
 
     player.x = nx
     player.y = ny
+
+    // pegou uma manga — 50 pontos
+    if (maze[ny][nx] === 5) {
+        maze[ny][nx] = 0
+        score += 50
+        updateScore()
+    }
 
     // condição de vitória
     if (maze[ny][nx] === 2) {
@@ -332,6 +366,22 @@ function placeHazards(maze) {
     for (let i = waterCount; i < waterCount + bridgeCount; i++) maze[openCells[i].y][openCells[i].x] = 4
 }
 
+function placeMangoes(maze) {
+    const openCells = []
+    for (let y = 0; y < Lines; y++)
+        for (let x = 0; x < Columns; x++)
+            if (maze[y][x] === 0) openCells.push({x, y})
+
+    for (let i = openCells.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1))
+        ;[openCells[i], openCells[j]] = [openCells[j], openCells[i]]
+    }
+
+    // ~4% das células restantes viram manga (50 pontos cada ao coletar)
+    const mangoCount = Math.floor(openCells.length * 0.04)
+    for (let i = 0; i < mangoCount; i++) maze[openCells[i].y][openCells[i].x] = 5
+}
+
 // Testa se existe ao menos um caminho sem passar por pontes (pontes = celula 4)
 function hasSafePath(maze, startX, startY, exitX, exitY) {
     const lines = maze.length
@@ -374,6 +424,7 @@ function newGame() {
         addLoops(maze, Columns, Lines) 
         
         placeHazards(maze)
+        placeMangoes(maze)
 
         player = findRandomOpenCell(maze)
         monsters = []
@@ -391,10 +442,14 @@ function newGame() {
 
     stuck = false
     gameOver = false
+    score = 0
+    updateScore()
     hideEndScreen()
 }
 
 document.getElementById('restartBtn').addEventListener('click', newGame)
 
-newGame()
-startRenderLoop()
+loadAssets().then(() => {
+    newGame()
+    startRenderLoop()
+})
