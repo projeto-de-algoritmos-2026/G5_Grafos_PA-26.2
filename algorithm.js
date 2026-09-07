@@ -182,3 +182,39 @@ function drawHintPaths() {
         }
     })
 }
+
+// Verifica se existe pelo menos um caminho do início até a saída sem passar por nenhuma ponte
+function hasSafePath(maze, startX, startY, exitX, exitY) {
+    const lines = maze.length
+    const columns = maze[0].length
+    const safeGraph = {}
+
+    for (let y = 0; y < lines; y++) {
+        for (let x = 0; x < columns; x++) {
+            // Trata paredes (1) E pontes (4) como inacessíveis para o teste seguro
+            if (maze[y][x] === 1 || maze[y][x] === 4) continue
+            
+            const currentKey = key(x, y)
+            safeGraph[currentKey] = []
+            
+            const neighbors = [
+                {nx: x+1, ny: y}, {nx: x-1, ny: y},
+                {nx: x, ny: y+1}, {nx: x, ny: y-1}
+            ]
+            for (const {nx, ny} of neighbors) {
+                if (nx < 0 || nx >= columns || ny < 0 || ny >= lines) continue
+                if (maze[ny][nx] === 1 || maze[ny][nx] === 4) continue
+                safeGraph[currentKey].push(key(nx, ny))
+            }
+        }
+    }
+
+    const startKey = key(startX, startY)
+    const exitKey = key(exitX, exitY)
+    
+    // Se o ponto inicial ou final não existirem no grafo seguro, não há caminho
+    if (!safeGraph[startKey] || !safeGraph[exitKey]) return false
+
+    const result = dijkstra(safeGraph, startKey, null)
+    return result.distances[exitKey] !== Infinity
+}

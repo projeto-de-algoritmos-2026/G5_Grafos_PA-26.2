@@ -332,17 +332,63 @@ function placeHazards(maze) {
     for (let i = waterCount; i < waterCount + bridgeCount; i++) maze[openCells[i].y][openCells[i].x] = 4
 }
 
-function newGame() {
-    maze = generateMaze(Columns, Lines)
-    addLoops(maze, Columns, Lines) 
-    player = findRandomOpenCell(maze)
-    monsters = []
-    for (let i = 0; i < MONSTER_COUNT; i++) {
-        monsters.push(findRandomOpenCell(maze, [player, ...monsters]))
+// Testa se existe ao menos um caminho sem passar por pontes (pontes = celula 4)
+function hasSafePath(maze, startX, startY, exitX, exitY) {
+    const lines = maze.length
+    const columns = maze[0].length
+    const safeGraph = {}
+
+    for (let y = 0; y < lines; y++) {
+        for (let x = 0; x < columns; x++) {
+            if (maze[y][x] === 1 || maze[y][x] === 4) continue
+            const currentKey = key(x, y)
+            safeGraph[currentKey] = []
+            const neighbors = [
+                {nx: x+1, ny: y}, {nx: x-1, ny: y},
+                {nx: x, ny: y+1}, {nx: x, ny: y-1}
+            ]
+            for (const {nx, ny} of neighbors) {
+                if (nx < 0 || nx >= columns || ny < 0 || ny >= lines) continue
+                if (maze[ny][nx] === 1 || maze[ny][nx] === 4) continue
+                safeGraph[currentKey].push(key(nx, ny))
+            }
+        }
     }
-    placeHazards(maze)
-    ;({ graph, weights } = buildGraph(maze))
-    exit = placeExit(maze, graph, weights, player.x, player.y, monsters)
+
+    const startKey = key(startX, startY)
+    const exitKey = key(exitX, exitY)
+
+    if (!safeGraph[startKey] || !safeGraph[exitKey]) return false
+
+    const result = dijkstra(safeGraph, startKey, null)
+    return result.distances[exitKey] !== Infinity
+}
+
+function newGame() {
+    let validMapFound = false
+    let attempts = 0
+
+    while (!validMapFound && attempts < 100) {
+        attempts++
+        maze = generateMaze(Columns, Lines)
+        addLoops(maze, Columns, Lines) 
+        
+        placeHazards(maze)
+
+        player = findRandomOpenCell(maze)
+        monsters = []
+        for (let i = 0; i < MONSTER_COUNT; i++) {
+            monsters.push(findRandomOpenCell(maze, [player, ...monsters]))
+        }
+
+        ;({ graph, weights } = buildGraph(maze))
+        exit = placeExit(maze, graph, weights, player.x, player.y, monsters)
+
+        if (exit && hasSafePath(maze, player.x, player.y, exit.x, exit.y)) {
+            validMapFound = true
+        }
+    }
+
     stuck = false
     gameOver = false
     hideEndScreen()
