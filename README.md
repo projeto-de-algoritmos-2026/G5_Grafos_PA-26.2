@@ -6,9 +6,11 @@ Projeto da disciplina de **Projeto de Algoritmos** (UnB/FGA) — um labirinto ge
 
 ## Demonstração
 
-https://github.com/user-attachments/assets/demo.mp4
+> O vídeo está disponível em `assets/demo.mp4`.
 
-> Vídeo disponível em `assets/demo.mp4`. Se o player acima não carregar diretamente no GitHub, baixe ou assista o arquivo na pasta `assets/`.
+
+
+
 
 ## Como jogar
 
