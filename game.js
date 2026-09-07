@@ -7,7 +7,7 @@ const Cells = 36 //isso aqui e o tamanho dos PIXELS das celulas, as varaveis aci
 canvas.width =  Columns*Cells
 canvas.height = Lines*Cells
 
-let maze, player, monsters, graph
+let maze, player, monsters, graph, exit
 
 function generateMaze(columns, lines){
     const maze=[]
@@ -46,10 +46,54 @@ function generateMaze(columns, lines){
     return maze;
 }
 
+function placeExit(maze, graph, playerX, playerY, monsters) {
+    const playerStart = key(playerX, playerY)
+    const monsterStarts = monsters.map(m => key(m.x, m.y))
+
+    const { distances: distPlayer } = dijkstra(graph, playerStart)
+    const { distances: distMonsters } = dijkstraMulti(graph, monsterStarts)
+
+    const candidates = []
+
+    for (let x = 1; x < Columns-1; x++) {
+        if (maze[1][x] === 0) {
+            const k = key(x, 1)
+            if (distPlayer[k] !== Infinity && distPlayer[k] < distMonsters[k])
+                candidates.push({x, y: 1})  // saída na célula acessível, não na borda
+        }
+        if (maze[Lines-2][x] === 0) {
+            const k = key(x, Lines-2)
+            if (distPlayer[k] !== Infinity && distPlayer[k] < distMonsters[k])
+                candidates.push({x, y: Lines-2})
+        }
+    }
+    for (let y = 1; y < Lines-1; y++) {
+        if (maze[y][1] === 0) {
+            const k = key(1, y)
+            if (distPlayer[k] !== Infinity && distPlayer[k] < distMonsters[k])
+                candidates.push({x: 1, y})
+        }
+        if (maze[y][Columns-2] === 0) {
+            const k = key(Columns-2, y)
+            if (distPlayer[k] !== Infinity && distPlayer[k] < distMonsters[k])
+                candidates.push({x: Columns-2, y})
+        }
+    }
+
+    if (candidates.length === 0) return null
+    const exit = candidates.reduce((best, c) => {
+    const k = key(c.x, c.y)
+    return distPlayer[k] > distPlayer[key(best.x, best.y)] ? c : best
+    }, candidates[0])
+    maze[exit.y][exit.x] = 2
+    return exit
+}
+
 function drawGrid(columns, lines, maze){
     for(let y=0;y<lines;y++){
         for(let x=0;x<columns;x++){
             if(maze[y][x]==1) ctx.fillStyle = '#0f3460'
+            else if (maze[y][x] === 2) ctx.fillStyle = '#FFD700'  // dourado
             else if(maze[y][x]==0) ctx.fillStyle = '#16213e'
             ctx.fillRect(x*Cells, y*Cells, Cells, Cells)
 
@@ -95,22 +139,38 @@ document.addEventListener('keydown', function(event) {
     const ny = player.y + dy
 
     // só mexe se não for parede
-    if (maze[ny][nx] === 0) {
-        player.x = nx
-        player.y = ny
+    if (maze[ny][nx] === 0 || maze[ny][nx] === 2) {
+    player.x = nx
+    player.y = ny
 
-        for (const monster of monsters) {
-            const newPos = moveMonsterTowardsPlayer(graph, monster.x, monster.y, player.x, player.y)
-            monster.x = newPos.x
-            monster.y = newPos.y
-        }
-
+    // condição de vitória
+    if (maze[ny][nx] === 2) {
         draw()
+        alert('Você escapou!🎉')
+        return
     }
+
+    // move monstros
+    for (const monster of monsters) {
+        const newPos = moveMonsterTowardsPlayer(graph, monster.x, monster.y, player.x, player.y)
+        monster.x = newPos.x
+        monster.y = newPos.y
+
+        // condição de derrota
+        if (monster.x === player.x && monster.y === player.y) {
+            draw()
+            alert('Você foi capturado!💀')
+            return
+        }
+    }
+
+    draw()
+}
 })
 
-maze=generateMaze(Columns,Lines)
+maze = generateMaze(Columns, Lines)
 player = findRandomOpenCell(maze)
 monsters = [findRandomOpenCell(maze), findRandomOpenCell(maze)]
-graph = buildGraph(maze)  
+graph = buildGraph(maze)
+exit = placeExit(maze, graph, player.x, player.y, monsters)
 draw()

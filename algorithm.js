@@ -6,7 +6,6 @@ function buildGraph(maze) {
     const graph = {}
     const lines = maze.length
     const columns = maze[0].length
-
     for (let y = 0; y < lines; y++) {
         for (let x = 0; x < columns; x++) {
             if (maze[y][x] === 1) continue
@@ -27,13 +26,18 @@ function buildGraph(maze) {
 }
 
 function dijkstra(graph, start) {
+    return dijkstraMulti(graph, [start])
+}
+
+function dijkstraMulti(graph, starts) {
     const distances = {}, previous = {}, visited = {}
     for (const node in graph) {
         distances[node] = Infinity
         previous[node] = null
     }
-    distances[start] = 0
-
+    for (const start of starts) {
+        distances[start] = 0
+    }
     while (true) {
         let currentNode = null, smallestDistance = Infinity
         for (const node in distances) {
