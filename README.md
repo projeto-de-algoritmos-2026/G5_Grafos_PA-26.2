@@ -4,6 +4,9 @@
 
 Projeto da disciplina de **Projeto de Algoritmos** (UnB/FGA) — um labirinto gerado proceduralmente onde monstros usam **Dijkstra** para perseguir o jogador, que precisa escapar por uma saída antes de ser capturado.
 
+<img width="941" height="907" alt="image" src="https://github.com/user-attachments/assets/6d37768e-c173-4780-bbe4-708b17c4b51a" />
+
+
 ## Demonstração
 
 > O vídeo está disponível em `assets/demo.mp4`.
