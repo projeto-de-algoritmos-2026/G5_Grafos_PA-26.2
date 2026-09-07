@@ -101,14 +101,14 @@ function hash2(x, y) {
 }
 
 function drawWallCell(px, py) {
-    ctx.fillStyle = '#0f3460'
+    ctx.fillStyle = '#141414'
     ctx.fillRect(px, py, Cells, Cells)
     ctx.strokeStyle = 'rgba(255,255,255,0.04)'
     ctx.strokeRect(px + 0.5, py + 0.5, Cells - 1, Cells - 1)
 }
 
 function drawFloorCell(px, py, x, y) {
-    ctx.fillStyle = (x + y) % 2 === 0 ? '#16213e' : '#182448'
+    ctx.fillStyle = (x + y) % 2 === 0 ? '#0d0d0d' : '#111111'
     ctx.fillRect(px, py, Cells, Cells)
 }
 
