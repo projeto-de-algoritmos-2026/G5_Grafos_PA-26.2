@@ -7,10 +7,9 @@ Projeto da disciplina de **Projeto de Algoritmos** (UnB/FGA) — um labirinto ge
 <img width="941" height="907" alt="image" src="https://github.com/user-attachments/assets/6d37768e-c173-4780-bbe4-708b17c4b51a" />
 
 
-## Demonstração
+## Vídeo de demonstração
 
-> O vídeo está disponível em `assets/demo.mp4`.
-
+https://youtu.be/B91ddTWNmyY?is=ei1tJEiak_TQSjBq
 
 
 
