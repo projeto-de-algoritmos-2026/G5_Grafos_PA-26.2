@@ -11,6 +11,7 @@ let maze, player, monsters, graph, weights, exit
 let stuck = false  //true quando player tá na água esperando 2º aperto
 let gameOver = false
 let score = 0
+let showStartHint = true  //destaca a posição inicial até o jogador dar o 1º passo
 
 const PLAYER_IMAGE = 'player'
 const MONSTER_IMAGES = ['monster1', 'monster2', 'monster3', 'monster4', 'monster5', 'monster6']
@@ -28,7 +29,7 @@ function loadImage(name) {
 }
 
 function loadAssets() {
-    const names = ['grass1', 'grass2', 'tree1', 'tree2', 'mango', PLAYER_IMAGE, ...MONSTER_IMAGES]
+    const names = ['path1', 'path2', 'wall1', 'wall2', 'wall3', 'mango', PLAYER_IMAGE, ...MONSTER_IMAGES]
     return Promise.all(names.map(loadImage))
 }
 
@@ -122,18 +123,26 @@ function hash2(x, y) {
 }
 
 function drawWallCell(px, py, x, y) {
-    const img = hash2(x, y) > 0.5 ? IMAGES.tree1 : IMAGES.tree2
+    const h = hash2(x, y)
+    const img = h > 0.96 ? IMAGES.wall3 : (h > 0.48 ? IMAGES.wall1 : IMAGES.wall2)  // ~4% com tocha
     ctx.drawImage(img, px, py, Cells, Cells)
 }
 
 function drawFloorCell(px, py, x, y) {
-    const img = (x + y) % 2 === 0 ? IMAGES.grass1 : IMAGES.grass2
+    const img = (x + y) % 2 === 0 ? IMAGES.path1 : IMAGES.path2
     ctx.drawImage(img, px, py, Cells, Cells)
 }
 
 function drawMangoCell(px, py, x, y, time) {
     drawFloorCell(px, py, x, y)
     const bob = Math.sin(time / 250 + x + y) * 2
+
+    // sombrinha no chão pra manga não sumir na laje clara
+    ctx.fillStyle = 'rgba(0,0,0,0.28)'
+    ctx.beginPath()
+    ctx.ellipse(px + Cells/2, py + Cells * 0.8, Cells * 0.26, Cells * 0.09, 0, 0, Math.PI * 2)
+    ctx.fill()
+
     ctx.drawImage(IMAGES.mango, px + Cells * 0.1, py + Cells * 0.1 + bob, Cells * 0.8, Cells * 0.8)
 }
 
@@ -228,6 +237,36 @@ function findRandomOpenCell(maze, excluded = []){
     return openCells[Math.floor(Math.random() * openCells.length)]
 }
 
+function drawStartIndicator(time) {
+    if (!showStartHint) return
+
+    const cx = player.x * Cells + Cells/2
+    const cy = player.y * Cells + Cells/2
+    const pulse = 0.5 + 0.5 * Math.sin(time / 220)
+
+    ctx.save()
+
+    // halo pulsante em volta do player
+    ctx.strokeStyle = `rgba(255, 215, 0, ${0.35 + pulse * 0.5})`
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.arc(cx, cy, Cells * (0.65 + pulse * 0.3), 0, Math.PI * 2)
+    ctx.stroke()
+
+    // seta apontando pro player
+    const bob = pulse * 5
+    const tipY = cy - Cells * 0.75 - bob
+    ctx.fillStyle = '#FFD700'
+    ctx.beginPath()
+    ctx.moveTo(cx, tipY)
+    ctx.lineTo(cx - Cells * 0.28, tipY - Cells * 0.42)
+    ctx.lineTo(cx + Cells * 0.28, tipY - Cells * 0.42)
+    ctx.closePath()
+    ctx.fill()
+
+    ctx.restore()
+}
+
 function drawEntity(entity, imageKey) {
     const px = entity.x * Cells  // canto da célula
     const py = entity.y * Cells
@@ -237,6 +276,7 @@ function drawEntity(entity, imageKey) {
 
 function draw(time = 0) {
     drawGrid(Columns, Lines, maze, time)
+    drawStartIndicator(time)
     drawEntity(player, PLAYER_IMAGE)
     monsters.forEach((monster, i) => drawEntity(monster, MONSTER_IMAGES[i % MONSTER_IMAGES.length]))
     drawHintPaths()
@@ -259,7 +299,7 @@ function showEndScreen(kind, title, message) {
     document.getElementById('overlayEmoji').textContent = kind === 'win' ? '🎉' : '💀'
     document.getElementById('overlayTitle').textContent = title
     document.getElementById('overlayMessage').textContent = message
-    document.getElementById('overlayScore').textContent = `🥭 Pontuação final: ${score}`
+    document.getElementById('overlayScore').textContent = `Pontuação final: ${score}`
     card.classList.remove('win', 'lose')
     card.classList.add(kind)
     overlay.classList.remove('hidden')
@@ -307,6 +347,7 @@ document.addEventListener('keydown', function(event) {
 
     player.x = nx
     player.y = ny
+    showStartHint = false  // já se localizou, some com o destaque
 
     // pegou uma manga — 50 pontos
     if (maze[ny][nx] === 5) {
@@ -443,6 +484,7 @@ function newGame() {
     stuck = false
     gameOver = false
     score = 0
+    showStartHint = true
     updateScore()
     hideEndScreen()
 }
