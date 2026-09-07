@@ -10,10 +10,9 @@ canvas.height = Lines*Cells
 function generateMaze(columns, lines){
     const maze=[]
     for(let i=0;i<lines;i++) maze.push(new Array(columns).fill(1))
-    return maze
 
     function shuffle(array){
-        for(let i=0;i<array.length - 1;i++){
+        for(let i=array.length-1;i>0;i--){            
             const j = Math.floor(Math.random()*(i+1))
             ;[array[i], array[j]] = [array[j], array[i]]
         }
